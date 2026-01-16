@@ -81,7 +81,12 @@ class GlobalHotkeys:
 
             if frozen in self.hotkeys:
                 callback = self.hotkeys[frozen]
-                threading.Thread(target=callback, daemon=True).start()
+                def safe_callback():
+                    try:
+                        callback()
+                    except Exception:
+                        pass  # Silently ignore callback errors
+                threading.Thread(target=safe_callback, daemon=True).start()
 
     def _on_release(self, key):
         key_name = self._normalize_key(key)
