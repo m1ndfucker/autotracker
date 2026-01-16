@@ -1,0 +1,3 @@
+# requirements/windows.txt
+-r base.txt
+bettercam>=1.0.0
