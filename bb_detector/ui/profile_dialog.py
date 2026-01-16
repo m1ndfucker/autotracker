@@ -20,6 +20,7 @@ class ProfileDialog:
         self.profiles: List[Dict] = []
         self.selected_profile: Optional[str] = None
         self._window_id = None
+        self._profile_map: Dict[str, str] = {}  # Map display text to profile name
 
     def show(self):
         """Show the profile selection dialog."""
@@ -66,18 +67,21 @@ class ProfileDialog:
 
             with dpg.child_window(height=150, border=True):
                 if self.profiles:
+                    profile_items = []
+                    self._profile_map = {}  # Reset map
                     for profile in self.profiles[:10]:  # Limit to 10
                         name = profile.get('name', '')
                         display = profile.get('displayName', name)
                         deaths = profile.get('deaths', 0)
+                        item_text = f"{display} ({deaths} deaths)"
+                        profile_items.append(item_text)
+                        self._profile_map[item_text] = name
 
-                        with dpg.group(horizontal=True):
-                            dpg.add_radio_button(
-                                items=[f"{display} ({deaths} deaths)"],
-                                tag=f"profile_radio_{name}",
-                                callback=lambda s, a, u: self._on_profile_select(u),
-                                user_data=name
-                            )
+                    dpg.add_radio_button(
+                        items=profile_items,
+                        tag="profile_radio_group",
+                        callback=self._on_profile_radio_select
+                    )
                 else:
                     dpg.add_text("No public profiles found", color=(140, 140, 140))
 
@@ -102,7 +106,10 @@ class ProfileDialog:
             dpg.add_spacer(height=5)
             dpg.add_checkbox(label="Create new profile", tag="create_new_checkbox")
 
-            dpg.add_spacer(height=20)
+            dpg.add_spacer(height=10)
+            dpg.add_text("Profile name is required", tag="profile_error_text", color=(220, 70, 70), show=False)
+
+            dpg.add_spacer(height=10)
 
             # Buttons
             with dpg.group(horizontal=True):
@@ -110,11 +117,16 @@ class ProfileDialog:
                 dpg.add_button(label="Cancel", width=100, callback=self._on_cancel_click)
                 dpg.add_button(label="Connect", width=100, callback=self._on_connect_click)
 
-    def _on_profile_select(self, profile_name: str):
-        """Handle public profile selection."""
-        self.selected_profile = profile_name
-        dpg.set_value("profile_name_input", profile_name)
-        dpg.set_value("create_new_checkbox", False)
+    def _on_profile_radio_select(self, sender, app_data):
+        """Handle public profile radio selection."""
+        if app_data in self._profile_map:
+            profile_name = self._profile_map[app_data]
+            self.selected_profile = profile_name
+            dpg.set_value("profile_name_input", profile_name)
+            dpg.set_value("create_new_checkbox", False)
+            # Hide error if visible
+            if dpg.does_item_exist("profile_error_text"):
+                dpg.configure_item("profile_error_text", show=False)
 
     def _on_manual_input(self, sender, app_data):
         """Handle manual profile name input."""
@@ -141,7 +153,9 @@ class ProfileDialog:
         is_new = dpg.get_value("create_new_checkbox")
 
         if not name:
-            # Show error
+            # Show error message
+            if dpg.does_item_exist("profile_error_text"):
+                dpg.configure_item("profile_error_text", show=True)
             return
 
         if dpg.does_item_exist("profile_dialog"):
