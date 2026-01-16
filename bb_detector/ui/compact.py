@@ -29,27 +29,31 @@ class CompactWindow:
             no_collapse=True,
             show=False,
         ):
-            with dpg.group(horizontal=True):
-                # Deaths
-                dpg.add_text("", tag="compact_deaths", color=COLORS['accent'])
-                dpg.add_spacer(width=15)
+            # Use a button as clickable container
+            with dpg.group(tag="compact_content"):
+                with dpg.group(horizontal=True):
+                    # Deaths
+                    dpg.add_text("", tag="compact_deaths", color=COLORS['accent'])
+                    dpg.add_spacer(width=15)
 
-                # Timer
-                dpg.add_text("", tag="compact_timer")
+                    # Timer
+                    dpg.add_text("", tag="compact_timer")
 
-            with dpg.group(horizontal=True):
-                # Boss info
-                dpg.add_text("", tag="compact_boss", color=COLORS['boss'])
-                dpg.add_spacer(width=15)
+                with dpg.group(horizontal=True):
+                    # Boss info
+                    dpg.add_text("", tag="compact_boss", color=COLORS['boss'])
+                    dpg.add_spacer(width=15)
 
-                # Status
-                dpg.add_text("", tag="compact_status", color=COLORS['success'])
+                    # Status
+                    dpg.add_text("", tag="compact_status", color=COLORS['success'])
 
-        # Click handler to expand
-        with dpg.item_handler_registry(tag="compact_click_handler"):
-            dpg.add_item_clicked_handler(callback=self._on_click)
-
-        dpg.bind_item_handler_registry("compact_window", "compact_click_handler")
+                # Expand button
+                dpg.add_button(
+                    label="Click to expand",
+                    tag="compact_expand_btn",
+                    callback=self._on_click,
+                    width=-1
+                )
 
     def show(self):
         """Show compact window."""
@@ -110,8 +114,6 @@ class CompactWindow:
             return dpg.get_item_pos("compact_window")
         return self._position
 
-    def _on_click(self, sender, app_data):
-        """Handle click on compact window."""
-        # Click to expand (app_data: 0=left, 1=right, 2=middle)
-        if app_data == 0:  # Left click
-            self.on_expand()
+    def _on_click(self):
+        """Handle click on expand button."""
+        self.on_expand()
