@@ -176,12 +176,19 @@ class PlayTab:
 
     def _on_boss_victory_click(self):
         """Show victory dialog to enter boss name."""
+        # Center dialog on screen
+        dialog_width, dialog_height = 300, 120
+        vp_width = dpg.get_viewport_width()
+        vp_height = dpg.get_viewport_height()
+        pos_x = (vp_width - dialog_width) // 2
+        pos_y = (vp_height - dialog_height) // 2
+
         with dpg.window(
             label="Boss Victory",
             modal=True,
-            width=300,
-            height=120,
-            pos=[100, 200],
+            width=dialog_width,
+            height=dialog_height,
+            pos=[pos_x, pos_y],
             tag="victory_dialog",
             no_resize=True
         ):

@@ -2,7 +2,7 @@
 import pytest
 
 def test_websocket_client_init():
-    """WebSocket client initializes with profile"""
+    """WebSocket client initializes with correct URL"""
     from bb_detector.websocket_client import BBWebSocket
 
     ws = BBWebSocket(
@@ -14,8 +14,10 @@ def test_websocket_client_init():
     )
 
     assert ws.profile == 'testprofile'
+    assert 'bloodborne=true' in ws.url
+    assert 'profile=testprofile' in ws.url
     assert ws.authenticated == False
-    assert 'testprofile' in ws.url
+    assert ws._running == False
 
 def test_websocket_message_builders():
     """Message builder methods return correct format"""

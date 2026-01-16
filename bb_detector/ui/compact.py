@@ -112,6 +112,6 @@ class CompactWindow:
 
     def _on_click(self, sender, app_data):
         """Handle click on compact window."""
-        # Double-click to expand
-        if app_data == 1:  # Left click
+        # Click to expand (app_data: 0=left, 1=right, 2=middle)
+        if app_data == 0:  # Left click
             self.on_expand()

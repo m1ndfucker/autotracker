@@ -2,7 +2,16 @@
 """Settings tab - configuration options."""
 import dearpygui.dearpygui as dpg
 from typing import Callable, Dict, Any, List
+import mss
 from ..theme import COLORS
+
+
+def _get_monitor_list() -> List[str]:
+    """Get list of available monitors."""
+    with mss.mss() as sct:
+        # mss monitors[0] is "all monitors combined", skip it
+        count = len(sct.monitors) - 1
+        return [f"Display {i+1}" for i in range(count)]
 
 
 class SettingsTab:
@@ -48,11 +57,12 @@ class SettingsTab:
             dpg.add_spacer(height=5)
 
             # Monitor selection
+            monitors = _get_monitor_list()
             with dpg.group(horizontal=True):
                 dpg.add_text("Monitor:", color=COLORS['text_dim'], indent=10)
                 dpg.add_combo(
-                    items=["Display 1", "Display 2", "Display 3"],
-                    default_value="Display 1",
+                    items=monitors if monitors else ["Display 1"],
+                    default_value=monitors[0] if monitors else "Display 1",
                     tag="settings_monitor",
                     width=150,
                     callback=self._on_setting_change

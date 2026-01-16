@@ -49,8 +49,8 @@ class StateManager:
         for callback in self._subscribers:
             try:
                 callback(key, value)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[State] Subscriber error for {key}: {e}", flush=True)
 
     def update_from_server(self, data: Dict[str, Any]) -> None:
         """Update state from server bb-state message."""

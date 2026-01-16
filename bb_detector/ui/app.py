@@ -2,7 +2,6 @@
 """Main application window with tabs."""
 import dearpygui.dearpygui as dpg
 from typing import Optional, Callable
-import asyncio
 
 from .theme import create_theme, COLORS
 from .tabs.play import PlayTab
