@@ -5,7 +5,8 @@ __pycache__/
 venv/
 *.egg-info/
 dist/
-build/
+# PyInstaller build output (not the build/ scripts directory)
+build_output/
 *.egg
 .eggs/
 *.so

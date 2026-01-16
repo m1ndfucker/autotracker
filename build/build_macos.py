@@ -9,7 +9,7 @@ def build():
             shutil.rmtree(folder)
 
     APP = ['bb_detector/main.py']
-    DATA_FILES = [('assets', ['assets/templates/you_died_en.png'])]
+    DATA_FILES = [('assets/templates', ['assets/templates/you_died_en.png', 'assets/templates/you_died_ru.png'])]
     OPTIONS = {
         'argv_emulation': False,
         'bundle_identifier': 'kg.home.watch.bbdetector',
