@@ -1,6 +1,6 @@
 """Tab components for main window."""
 from .play import PlayTab
 from .settings import SettingsTab
-# from .calibration import CalibrationTab  # TODO: Implement in Task 6
+from .calibration import CalibrationTab
 
-__all__ = ['PlayTab', 'SettingsTab']  # Will add CalibrationTab when implemented
+__all__ = ['PlayTab', 'SettingsTab', 'CalibrationTab']
