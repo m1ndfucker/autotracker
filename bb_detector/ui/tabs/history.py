@@ -6,8 +6,8 @@ from ..theme import COLORS, create_accent_button_theme, create_success_button_th
 from ...state import Milestone, DeathTimestamp, BossFight
 
 
-# Icons for milestone picker
-MILESTONE_ICONS = ['★', '⚑', '🔑', '💎', '🗡️', '📍', '🏆', '🎯']
+# Icons for milestone picker (Unicode symbols that work in all fonts)
+MILESTONE_ICONS = ['★', '⚑', '♦', '▲', '●', '◆', '♠', '✦']
 
 
 def format_time(ms: int) -> str:
