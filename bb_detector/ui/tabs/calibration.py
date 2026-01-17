@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from ..theme import COLORS
 from ..corner_selector import CornerSelector
+from ..overlay_selector import show_overlay_selector
 
 
 class CalibrationTab:
@@ -46,16 +47,21 @@ class CalibrationTab:
             # Region display and select button
             with dpg.group(horizontal=True):
                 dpg.add_button(
-                    label="Select Region (F9)",
-                    callback=self._on_select_region_f9,
-                    width=140
+                    label="Select Region",
+                    callback=self._on_select_region_visual,
+                    width=110
                 )
-                dpg.add_button(label="Clear", callback=self._on_clear_region, width=60)
+                dpg.add_button(
+                    label="F9 Mode",
+                    callback=self._on_select_region_f9,
+                    width=70
+                )
+                dpg.add_button(label="Clear", callback=self._on_clear_region, width=50)
 
             # Region info display
             self._update_region_display_init()
 
-            # F9 instruction text (hidden by default)
+            # Status/instruction text (hidden by default)
             dpg.add_text(
                 "",
                 tag="f9_instruction",
@@ -222,8 +228,30 @@ class CalibrationTab:
 
         dpg.set_value("preview_texture", frame_flat.tolist())
 
+    def _on_select_region_visual(self):
+        """Start visual overlay region selection (draw rectangle with mouse)."""
+        # Show instruction
+        if dpg.does_item_exist("f9_instruction"):
+            dpg.set_value("f9_instruction", "Opening visual selector...")
+
+        # Start overlay selector in a separate thread
+        show_overlay_selector(
+            on_complete=self._on_region_selected_visual,
+            on_cancel=self._on_region_cancel_visual,
+            run_in_thread=True
+        )
+
+    def _on_region_selected_visual(self, region: dict):
+        """Handle region selection from visual overlay (called from background thread)."""
+        # Queue for main thread processing (same as F9 method)
+        self._pending_region = region
+
+    def _on_region_cancel_visual(self):
+        """Handle visual region selection cancel (called from background thread)."""
+        self._pending_progress = ("", -1)
+
     def _on_select_region_f9(self):
-        """Start F9 corner-click region selection."""
+        """Start F9 corner-click region selection (legacy mode)."""
         # Show instruction
         if dpg.does_item_exist("f9_instruction"):
             dpg.set_value("f9_instruction", "Move cursor to TOP-LEFT corner and press F9...")
