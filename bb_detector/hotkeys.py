@@ -85,7 +85,7 @@ class GlobalHotkeys:
                     try:
                         callback()
                     except Exception:
-                        pass  # Silently ignore callback errors
+                        pass
                 threading.Thread(target=safe_callback, daemon=True).start()
 
     def _on_release(self, key):

@@ -1,0 +1,127 @@
+name: Build Windows
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Create release'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Tesseract
+        shell: powershell
+        run: |
+          # Download Tesseract installer from UB-Mannheim
+          $tesseractUrl = "https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-5.4.0.20240606.exe"
+          $installerPath = "$env:TEMP\tesseract-installer.exe"
+
+          Write-Host "Downloading Tesseract..."
+          Invoke-WebRequest -Uri $tesseractUrl -OutFile $installerPath
+
+          Write-Host "Installing Tesseract..."
+          Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
+
+          Write-Host "Tesseract installed!"
+
+      - name: Prepare Tesseract for bundle
+        shell: powershell
+        run: |
+          $tesseractDir = "assets\tesseract"
+          $tessdataDir = "$tesseractDir\tessdata"
+          $sourceDir = "C:\Program Files\Tesseract-OCR"
+
+          # Create directories
+          New-Item -ItemType Directory -Force -Path $tesseractDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $tessdataDir | Out-Null
+
+          # Copy tesseract.exe
+          Copy-Item "$sourceDir\tesseract.exe" -Destination $tesseractDir
+          Write-Host "Copied tesseract.exe"
+
+          # Copy all DLLs
+          Get-ChildItem "$sourceDir\*.dll" | ForEach-Object {
+              Copy-Item $_.FullName -Destination $tesseractDir
+              Write-Host "Copied $($_.Name)"
+          }
+
+          # Copy eng.traineddata
+          if (Test-Path "$sourceDir\tessdata\eng.traineddata") {
+              Copy-Item "$sourceDir\tessdata\eng.traineddata" -Destination $tessdataDir
+              Write-Host "Copied eng.traineddata"
+          } else {
+              # Download if not found
+              Write-Host "Downloading eng.traineddata..."
+              $tessUrl = "https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata"
+              Invoke-WebRequest -Uri $tessUrl -OutFile "$tessdataDir\eng.traineddata"
+          }
+
+          Write-Host ""
+          Write-Host "Tesseract bundle contents:"
+          Get-ChildItem $tesseractDir
+          Write-Host ""
+          Write-Host "Tessdata contents:"
+          Get-ChildItem $tessdataDir
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/windows.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller bb_detector.spec
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev-$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rename artifact
+        shell: powershell
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $newName = "BB-Death-Detector-$version-Windows.exe"
+          Move-Item "dist\BB Death Detector.exe" "dist\$newName"
+          Write-Host "Created: $newName"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BB-Death-Detector-${{ steps.version.outputs.version }}-Windows
+          path: dist/*.exe
+          retention-days: 30
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.release == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.exe
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

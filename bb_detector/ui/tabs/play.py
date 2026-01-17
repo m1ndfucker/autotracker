@@ -1,6 +1,7 @@
+# bb_detector/ui/tabs/play.py
 """Play tab - main gameplay controls."""
 import dearpygui.dearpygui as dpg
-from typing import Callable, Optional
+from typing import Callable
 from ..theme import COLORS, create_accent_button_theme, create_success_button_theme, create_boss_button_theme
 
 
@@ -38,106 +39,70 @@ class PlayTab:
         self._boss_theme = create_boss_button_theme()
 
         with dpg.tab(label="Play", parent=parent):
-            dpg.add_spacer(height=10)
-
-            # Deaths section
-            dpg.add_text("DEATHS", color=COLORS['text_dim'])
-            dpg.add_spacer(height=5)
-
-            with dpg.child_window(height=80, border=True):
-                dpg.add_spacer(height=10)
-                with dpg.group(horizontal=True):
-                    dpg.add_spacer(width=20)
-                    dpg.add_text("0", tag="deaths_display", color=COLORS['accent'])
-
-                dpg.add_spacer(height=10)
-                with dpg.group(horizontal=True):
-                    dpg.add_spacer(width=20)
-                    btn = dpg.add_button(label="+ Manual Death", callback=self._on_death_click, width=150)
-                    dpg.bind_item_theme(btn, self._accent_theme)
-
-            dpg.add_spacer(height=15)
-
-            # Timer section
+            # Deaths row
             with dpg.group(horizontal=True):
-                dpg.add_text("TIMER", color=COLORS['text_dim'])
-                dpg.add_spacer(width=20)
+                dpg.add_text("Deaths")
+                dpg.add_text("0", tag="deaths_display", color=COLORS['red'])
+                btn = dpg.add_button(label="+1", callback=self._on_death_click, width=40)
+                dpg.bind_item_theme(btn, self._accent_theme)
+
+            # Timer row
+            with dpg.group(horizontal=True):
+                dpg.add_text("Timer")
                 dpg.add_text("00:00:00", tag="timer_display")
-
-            dpg.add_spacer(height=5)
-            with dpg.group(horizontal=True):
-                btn_start = dpg.add_button(label="Start", tag="timer_start_btn", callback=self._on_timer_start, width=80)
+                btn_start = dpg.add_button(label="Start", tag="timer_start_btn", callback=self._on_timer_start, width=50)
                 dpg.bind_item_theme(btn_start, self._success_theme)
-                btn_stop = dpg.add_button(label="Stop", tag="timer_stop_btn", callback=self._on_timer_stop, width=80)
-                dpg.add_button(label="Reset", callback=self._on_timer_reset, width=80)
+                dpg.add_button(label="Stop", tag="timer_stop_btn", callback=self._on_timer_stop, width=50)
+                dpg.add_button(label="Reset", callback=self._on_timer_reset, width=50)
 
-            dpg.add_spacer(height=15)
             dpg.add_separator()
-            dpg.add_spacer(height=10)
 
-            # Boss mode section
+            # Boss mode row
             with dpg.group(horizontal=True):
-                dpg.add_text("BOSS MODE", color=COLORS['text_dim'])
-                dpg.add_spacer(width=10)
+                dpg.add_text("Boss")
                 dpg.add_text("OFF", tag="boss_status", color=COLORS['text_dim'])
+                dpg.add_text("Deaths:", color=COLORS['text_dim'])
+                dpg.add_text("0", tag="boss_deaths_display", color=COLORS['purple'])
 
-            dpg.add_spacer(height=5)
+            # Boss buttons
+            with dpg.group(horizontal=True, tag="boss_buttons_inactive"):
+                btn_boss = dpg.add_button(label="Start Boss", callback=self._on_boss_start, width=100)
+                dpg.bind_item_theme(btn_boss, self._boss_theme)
 
-            with dpg.child_window(height=100, border=True, tag="boss_section"):
-                dpg.add_spacer(height=5)
+            with dpg.group(horizontal=True, tag="boss_buttons_active", show=False):
+                btn_victory = dpg.add_button(label="Victory", callback=self._on_boss_victory_click, width=70)
+                dpg.bind_item_theme(btn_victory, self._success_theme)
+                dpg.add_button(label="Cancel", callback=self._on_boss_cancel, width=70)
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Boss Deaths:", color=COLORS['text_dim'])
-                    dpg.add_text("0", tag="boss_deaths_display", color=COLORS['boss'])
-
-                dpg.add_spacer(height=10)
-
-                with dpg.group(horizontal=True, tag="boss_buttons_inactive"):
-                    btn_boss = dpg.add_button(label="Start Boss", callback=self._on_boss_start, width=120)
-                    dpg.bind_item_theme(btn_boss, self._boss_theme)
-
-                with dpg.group(horizontal=True, tag="boss_buttons_active", show=False):
-                    btn_victory = dpg.add_button(label="Victory", callback=self._on_boss_victory_click, width=100)
-                    dpg.bind_item_theme(btn_victory, self._success_theme)
-                    btn_cancel = dpg.add_button(label="Cancel", callback=self._on_boss_cancel, width=100)
-
-            dpg.add_spacer(height=15)
             dpg.add_separator()
-            dpg.add_spacer(height=10)
 
-            # Detection toggle
+            # Detection row
             with dpg.group(horizontal=True):
-                dpg.add_text("Detection:", color=COLORS['text_dim'])
-                dpg.add_spacer(width=5)
-                dpg.add_text("ON", tag="detection_status", color=COLORS['success'])
-                dpg.add_spacer(width=20)
-                dpg.add_button(label="Toggle", callback=self._on_toggle_detection, width=80)
+                dpg.add_text("Detection")
+                dpg.add_text("ON", tag="detection_status", color=COLORS['green'])
+                dpg.add_button(label="Toggle", callback=self._on_toggle_detection, width=60)
 
     def update(self, deaths: int, elapsed: int, is_running: bool,
                boss_mode: bool, boss_deaths: int, detection_enabled: bool):
         """Update all displays."""
-        # Deaths
         if dpg.does_item_exist("deaths_display"):
             dpg.set_value("deaths_display", str(deaths))
 
-        # Timer
         if dpg.does_item_exist("timer_display"):
             hours = elapsed // 3600000
             minutes = (elapsed % 3600000) // 60000
             seconds = (elapsed % 60000) // 1000
             dpg.set_value("timer_display", f"{hours:02d}:{minutes:02d}:{seconds:02d}")
 
-        # Timer buttons
         if dpg.does_item_exist("timer_start_btn"):
             dpg.configure_item("timer_start_btn", enabled=not is_running)
         if dpg.does_item_exist("timer_stop_btn"):
             dpg.configure_item("timer_stop_btn", enabled=is_running)
 
-        # Boss mode
         if dpg.does_item_exist("boss_status"):
             if boss_mode:
                 dpg.set_value("boss_status", "ACTIVE")
-                dpg.configure_item("boss_status", color=COLORS['boss'])
+                dpg.configure_item("boss_status", color=COLORS['purple'])
             else:
                 dpg.set_value("boss_status", "OFF")
                 dpg.configure_item("boss_status", color=COLORS['text_dim'])
@@ -150,14 +115,13 @@ class PlayTab:
         if dpg.does_item_exist("boss_buttons_active"):
             dpg.configure_item("boss_buttons_active", show=boss_mode)
 
-        # Detection
         if dpg.does_item_exist("detection_status"):
             if detection_enabled:
                 dpg.set_value("detection_status", "ON")
-                dpg.configure_item("detection_status", color=COLORS['success'])
+                dpg.configure_item("detection_status", color=COLORS['green'])
             else:
                 dpg.set_value("detection_status", "OFF")
-                dpg.configure_item("detection_status", color=COLORS['accent'])
+                dpg.configure_item("detection_status", color=COLORS['red'])
 
     def _on_death_click(self):
         self.on_manual_death()
@@ -175,29 +139,24 @@ class PlayTab:
         self.on_boss_start()
 
     def _on_boss_victory_click(self):
-        """Show victory dialog to enter boss name."""
-        # Center dialog on screen
-        dialog_width, dialog_height = 300, 120
+        """Show victory dialog."""
         vp_width = dpg.get_viewport_width()
         vp_height = dpg.get_viewport_height()
-        pos_x = (vp_width - dialog_width) // 2
-        pos_y = (vp_height - dialog_height) // 2
 
         with dpg.window(
-            label="Boss Victory",
+            label="Victory",
             modal=True,
-            width=dialog_width,
-            height=dialog_height,
-            pos=[pos_x, pos_y],
+            width=250,
+            height=100,
+            pos=[(vp_width - 250) // 2, (vp_height - 100) // 2],
             tag="victory_dialog",
             no_resize=True
         ):
-            dpg.add_text("Enter boss name:")
-            dpg.add_input_text(tag="boss_name_input", width=-1)
-            dpg.add_spacer(height=10)
+            dpg.add_input_text(tag="boss_name_input", width=-1, hint="Boss name")
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Cancel", callback=lambda: dpg.delete_item("victory_dialog"), width=100)
-                dpg.add_button(label="Confirm", callback=self._on_victory_confirm, width=100)
+                dpg.add_button(label="Cancel", callback=lambda: dpg.delete_item("victory_dialog"), width=80)
+                btn = dpg.add_button(label="OK", callback=self._on_victory_confirm, width=80)
+                dpg.bind_item_theme(btn, self._success_theme)
 
     def _on_victory_confirm(self):
         name = dpg.get_value("boss_name_input") if dpg.does_item_exist("boss_name_input") else ""

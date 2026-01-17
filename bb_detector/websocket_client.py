@@ -157,6 +157,37 @@ class BBWebSocket:
         """Set death count."""
         await self._send('bb-set-deaths', deaths=deaths)
 
+    # === Milestone Methods ===
+
+    async def add_milestone(self, name: str, icon: str = "★"):
+        """Add a new milestone at current time."""
+        await self._send('bb-milestone-add', name=name, icon=icon)
+
+    async def edit_milestone(self, id: str, name: str, icon: str, timestamp: int = None):
+        """Edit an existing milestone."""
+        data = {'id': id, 'name': name, 'icon': icon}
+        if timestamp is not None:
+            data['timestamp'] = timestamp
+        await self._send('bb-milestone-edit', **data)
+
+    async def delete_milestone(self, id: str):
+        """Delete a milestone."""
+        await self._send('bb-milestone-delete', id=id)
+
+    # === Character Stats Methods ===
+
+    async def add_stats(self, stats: dict):
+        """Add character stats snapshot."""
+        await self._send('bb-stats-add', **stats)
+
+    async def edit_stats(self, id: str, stats: dict):
+        """Edit character stats."""
+        await self._send('bb-stats-edit', id=id, **stats)
+
+    async def delete_stats(self, id: str):
+        """Delete character stats."""
+        await self._send('bb-stats-delete', id=id)
+
     async def disconnect(self):
         self._running = False
         if self.ws:

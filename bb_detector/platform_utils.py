@@ -45,22 +45,39 @@ def check_macos_permissions() -> Dict[str, bool]:
     except Exception:
         pass
 
-    # Check Accessibility
+    # Check Accessibility using AXIsProcessTrusted (accurate for input monitoring)
     try:
-        cmd = ['osascript', '-e', 'tell application "System Events" to return true']
-        proc = subprocess.run(cmd, capture_output=True, timeout=2)
-        result['accessibility'] = proc.returncode == 0
-    except Exception:
-        pass
+        from ApplicationServices import AXIsProcessTrusted
+        result['accessibility'] = AXIsProcessTrusted()
+    except ImportError:
+        # Fallback to osascript check
+        try:
+            cmd = ['osascript', '-e', 'tell application "System Events" to return true']
+            proc = subprocess.run(cmd, capture_output=True, timeout=2)
+            result['accessibility'] = proc.returncode == 0
+        except Exception:
+            pass
 
     return result
 
 
 def open_macos_permissions():
+    """Open Privacy & Security settings (general)."""
     if get_platform() != 'macos':
         return
 
     subprocess.run([
         'open',
         'x-apple.systempreferences:com.apple.preference.security?Privacy'
+    ])
+
+
+def open_macos_accessibility_settings():
+    """Open Accessibility settings directly."""
+    if get_platform() != 'macos':
+        return
+
+    subprocess.run([
+        'open',
+        'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'
     ])

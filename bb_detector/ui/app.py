@@ -2,11 +2,15 @@
 """Main application window with tabs."""
 import dearpygui.dearpygui as dpg
 from typing import Optional, Callable
+from pathlib import Path
+import sys
 
 from .theme import create_theme, COLORS
 from .tabs.play import PlayTab
 from .tabs.settings import SettingsTab
 from .tabs.calibration import CalibrationTab
+from .tabs.history import HistoryTab
+from .tabs.stats import StatsTab
 from .compact import CompactWindow
 from .profile_dialog import ProfileDialog
 from ..state import StateManager
@@ -32,10 +36,18 @@ class App:
         on_boss_cancel: Callable,
         on_toggle_detection: Callable,
         on_profile_select: Callable,
-        on_template_change: Callable,
         on_capture: Callable,
+        on_capture_region: Callable,
         on_test_detection: Callable,
+        on_save_region: Callable,
         on_quit: Callable,
+        on_f9_pressed: Callable = None,
+        # Milestone callbacks
+        on_add_milestone: Callable = None,
+        on_delete_milestone: Callable = None,
+        # Stats callbacks
+        on_add_stats: Callable = None,
+        on_delete_stats: Callable = None,
     ):
         self.config = config
         self.state = state
@@ -50,23 +62,79 @@ class App:
         self._on_boss_cancel = on_boss_cancel
         self._on_toggle_detection = on_toggle_detection
         self._on_profile_select = on_profile_select
-        self._on_template_change = on_template_change
         self._on_capture = on_capture
+        self._on_capture_region = on_capture_region
         self._on_test_detection = on_test_detection
+        self._on_save_region = on_save_region
         self._on_quit = on_quit
+        self._on_add_milestone = on_add_milestone or (lambda n, i: None)
+        self._on_delete_milestone = on_delete_milestone or (lambda i: None)
+        self._on_add_stats = on_add_stats or (lambda s: None)
+        self._on_delete_stats = on_delete_stats or (lambda i: None)
 
         # UI components
         self.play_tab: Optional[PlayTab] = None
         self.settings_tab: Optional[SettingsTab] = None
         self.calibration_tab: Optional[CalibrationTab] = None
+        self.history_tab: Optional[HistoryTab] = None
+        self.stats_tab: Optional[StatsTab] = None
         self.compact_window: Optional[CompactWindow] = None
 
         self._is_compact = False
         self._running = False
 
+    def _load_fonts(self):
+        """Load fonts with Cyrillic support."""
+        # Find a font that supports Cyrillic
+        font_paths = []
+
+        # macOS system fonts
+        if sys.platform == 'darwin':
+            font_paths = [
+                '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+                '/System/Library/Fonts/Helvetica.ttc',
+                '/Library/Fonts/Arial Unicode.ttf',
+                '/System/Library/Fonts/SFNS.ttf',
+            ]
+        # Windows system fonts
+        elif sys.platform == 'win32':
+            font_paths = [
+                'C:/Windows/Fonts/arial.ttf',
+                'C:/Windows/Fonts/segoeui.ttf',
+                'C:/Windows/Fonts/tahoma.ttf',
+            ]
+
+        # Find first existing font
+        font_path = None
+        for fp in font_paths:
+            if Path(fp).exists():
+                font_path = fp
+                break
+
+        if not font_path:
+            print("[UI] No Cyrillic font found, using default", flush=True)
+            return
+
+        try:
+            with dpg.font_registry():
+                # Load font with extended glyph ranges
+                with dpg.font(font_path, 16) as font:
+                    # Add Cyrillic range (0x0400-0x04FF)
+                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+                    # Add default Latin range
+                    dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
+
+                dpg.bind_font(font)
+                print(f"[UI] Loaded font: {font_path}", flush=True)
+        except Exception as e:
+            print(f"[UI] Font loading failed: {e}", flush=True)
+
     def init(self):
         """Initialize DearPyGui and create windows."""
         dpg.create_context()
+
+        # Load font with Cyrillic support
+        self._load_fonts()
 
         # Create viewport
         dpg.create_viewport(
@@ -137,11 +205,27 @@ class App:
 
                 # Calibration tab
                 self.calibration_tab = CalibrationTab(
-                    on_template_change=self._on_template_change,
+                    config=self.config,
                     on_capture=self._on_capture,
+                    on_capture_region=self._on_capture_region,
                     on_test_detection=self._on_test_detection,
+                    on_save_region=self._on_save_region,
                 )
                 self.calibration_tab.create("main_tabs")
+
+                # History tab
+                self.history_tab = HistoryTab(
+                    on_add_milestone=self._on_add_milestone,
+                    on_delete_milestone=self._on_delete_milestone,
+                )
+                self.history_tab.create("main_tabs")
+
+                # Stats tab
+                self.stats_tab = StatsTab(
+                    on_add_stats=self._on_add_stats,
+                    on_delete_stats=self._on_delete_stats,
+                )
+                self.stats_tab.create("main_tabs")
 
             # Footer - status bar
             dpg.add_spacer(height=5)
@@ -199,6 +283,11 @@ class App:
         else:
             self._switch_to_compact()
 
+    def on_f9_pressed(self):
+        """Handle F9 hotkey press, pass to calibration tab if active."""
+        if self.calibration_tab:
+            self.calibration_tab.on_f9_pressed()
+
     def _on_state_change(self, key: str, value):
         """Handle state changes."""
         # Update UI based on state
@@ -222,6 +311,20 @@ class App:
             self.settings_tab.update(
                 profile=self.state.profile_display_name or self.state.profile,
                 connected=self.state.connected,
+            )
+
+        # Update history tab
+        if self.history_tab:
+            self.history_tab.update(
+                milestones=self.state.get('milestones', []),
+                death_timestamps=self.state.get('death_timestamps', []),
+                boss_fights=self.state.get('boss_fights', []),
+            )
+
+        # Update stats tab
+        if self.stats_tab:
+            self.stats_tab.update(
+                character_stats=self.state.get('character_stats', []),
             )
 
         # Update compact window
@@ -254,6 +357,9 @@ class App:
     def render(self):
         """Render one frame."""
         if self._running:
+            # Process pending updates from calibration tab (thread-safe)
+            if self.calibration_tab:
+                self.calibration_tab.update()
             dpg.render_dearpygui_frame()
 
     def is_running(self) -> bool:

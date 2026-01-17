@@ -83,21 +83,6 @@ class SettingsTab:
 
             dpg.add_spacer(height=5)
 
-            # Threshold
-            with dpg.group(horizontal=True):
-                dpg.add_text("Threshold:", color=COLORS['text_dim'], indent=10)
-                dpg.add_slider_float(
-                    default_value=0.75,
-                    min_value=0.5,
-                    max_value=0.95,
-                    tag="settings_threshold",
-                    width=150,
-                    format="%.2f",
-                    callback=self._on_setting_change
-                )
-
-            dpg.add_spacer(height=5)
-
             # Cooldown
             with dpg.group(horizontal=True):
                 dpg.add_text("Cooldown:", color=COLORS['text_dim'], indent=10)
@@ -177,10 +162,6 @@ class SettingsTab:
             fps = self.config.get('detection.fps', 10)
             dpg.set_value("settings_fps", str(fps))
 
-        if dpg.does_item_exist("settings_threshold"):
-            threshold = self.config.get('detection.death_threshold', 0.75)
-            dpg.set_value("settings_threshold", threshold)
-
         if dpg.does_item_exist("settings_cooldown"):
             cooldown = self.config.get('detection.death_cooldown', 5.0)
             dpg.set_value("settings_cooldown", f"{int(cooldown)} sec")
@@ -203,9 +184,6 @@ class SettingsTab:
 
         if dpg.does_item_exist("settings_fps"):
             settings['detection.fps'] = int(dpg.get_value("settings_fps"))
-
-        if dpg.does_item_exist("settings_threshold"):
-            settings['detection.death_threshold'] = dpg.get_value("settings_threshold")
 
         if dpg.does_item_exist("settings_cooldown"):
             val = dpg.get_value("settings_cooldown")
