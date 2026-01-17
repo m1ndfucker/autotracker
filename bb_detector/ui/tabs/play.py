@@ -15,6 +15,8 @@ class PlayTab:
         on_timer_stop: Callable[[], None],
         on_timer_reset: Callable[[], None],
         on_boss_start: Callable[[], None],
+        on_boss_pause: Callable[[], None],
+        on_boss_resume: Callable[[], None],
         on_boss_victory: Callable[[str], None],
         on_boss_cancel: Callable[[], None],
         on_toggle_detection: Callable[[], None],
@@ -24,6 +26,8 @@ class PlayTab:
         self.on_timer_stop = on_timer_stop
         self.on_timer_reset = on_timer_reset
         self.on_boss_start = on_boss_start
+        self.on_boss_pause = on_boss_pause
+        self.on_boss_resume = on_boss_resume
         self.on_boss_victory = on_boss_victory
         self.on_boss_cancel = on_boss_cancel
         self.on_toggle_detection = on_toggle_detection
@@ -31,6 +35,7 @@ class PlayTab:
         self._accent_theme = None
         self._success_theme = None
         self._boss_theme = None
+        self._boss_paused = False
 
     def create(self, parent: int):
         """Create the Play tab content."""
@@ -70,9 +75,10 @@ class PlayTab:
                 dpg.bind_item_theme(btn_boss, self._boss_theme)
 
             with dpg.group(horizontal=True, tag="boss_buttons_active", show=False):
-                btn_victory = dpg.add_button(label="Victory", callback=self._on_boss_victory_click, width=70)
+                btn_victory = dpg.add_button(label="Victory", callback=self._on_boss_victory_click, width=60)
                 dpg.bind_item_theme(btn_victory, self._success_theme)
-                dpg.add_button(label="Cancel", callback=self._on_boss_cancel, width=70)
+                dpg.add_button(label="Pause", tag="boss_pause_btn", callback=self._on_boss_pause, width=50)
+                dpg.add_button(label="Cancel", callback=self._on_boss_cancel, width=55)
 
             dpg.add_separator()
 
@@ -83,7 +89,7 @@ class PlayTab:
                 dpg.add_button(label="Toggle", callback=self._on_toggle_detection, width=60)
 
     def update(self, deaths: int, elapsed: int, is_running: bool,
-               boss_mode: bool, boss_deaths: int, detection_enabled: bool):
+               boss_mode: bool, boss_deaths: int, boss_paused: bool, detection_enabled: bool):
         """Update all displays."""
         if dpg.does_item_exist("deaths_display"):
             dpg.set_value("deaths_display", str(deaths))
@@ -101,11 +107,20 @@ class PlayTab:
 
         if dpg.does_item_exist("boss_status"):
             if boss_mode:
-                dpg.set_value("boss_status", "ACTIVE")
-                dpg.configure_item("boss_status", color=COLORS['purple'])
+                if boss_paused:
+                    dpg.set_value("boss_status", "PAUSED")
+                    dpg.configure_item("boss_status", color=COLORS['amber'])
+                else:
+                    dpg.set_value("boss_status", "ACTIVE")
+                    dpg.configure_item("boss_status", color=COLORS['purple'])
             else:
                 dpg.set_value("boss_status", "OFF")
                 dpg.configure_item("boss_status", color=COLORS['text_dim'])
+
+        # Update pause button label
+        self._boss_paused = boss_paused
+        if dpg.does_item_exist("boss_pause_btn"):
+            dpg.set_item_label("boss_pause_btn", "Resume" if boss_paused else "Pause")
 
         if dpg.does_item_exist("boss_deaths_display"):
             dpg.set_value("boss_deaths_display", str(boss_deaths))
@@ -163,6 +178,12 @@ class PlayTab:
         if dpg.does_item_exist("victory_dialog"):
             dpg.delete_item("victory_dialog")
         self.on_boss_victory(name)
+
+    def _on_boss_pause(self):
+        if self._boss_paused:
+            self.on_boss_resume()
+        else:
+            self.on_boss_pause()
 
     def _on_boss_cancel(self):
         self.on_boss_cancel()

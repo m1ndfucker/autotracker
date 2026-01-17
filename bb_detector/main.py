@@ -92,6 +92,8 @@ class BBDetectorApp:
             on_timer_stop=self._on_timer_stop,
             on_timer_reset=self._on_timer_reset,
             on_boss_start=self._on_boss_start,
+            on_boss_pause=self._on_boss_pause,
+            on_boss_resume=self._on_boss_resume,
             on_boss_victory=self._on_boss_victory,
             on_boss_cancel=self._on_boss_cancel,
             on_toggle_detection=self._on_toggle_detection,
@@ -392,6 +394,16 @@ class BBDetectorApp:
         """Handle boss start."""
         if self.loop and self.state.connected:
             asyncio.run_coroutine_threadsafe(self.ws.boss_start(), self.loop)
+
+    def _on_boss_pause(self):
+        """Handle boss pause."""
+        if self.loop and self.state.connected:
+            asyncio.run_coroutine_threadsafe(self.ws.boss_pause(), self.loop)
+
+    def _on_boss_resume(self):
+        """Handle boss resume."""
+        if self.loop and self.state.connected:
+            asyncio.run_coroutine_threadsafe(self.ws.boss_resume(), self.loop)
 
     def _on_boss_victory(self, name: str):
         """Handle boss victory."""

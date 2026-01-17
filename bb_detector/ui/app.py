@@ -32,6 +32,8 @@ class App:
         on_timer_stop: Callable,
         on_timer_reset: Callable,
         on_boss_start: Callable,
+        on_boss_pause: Callable,
+        on_boss_resume: Callable,
         on_boss_victory: Callable,
         on_boss_cancel: Callable,
         on_toggle_detection: Callable,
@@ -58,6 +60,8 @@ class App:
         self._on_timer_stop = on_timer_stop
         self._on_timer_reset = on_timer_reset
         self._on_boss_start = on_boss_start
+        self._on_boss_pause = on_boss_pause
+        self._on_boss_resume = on_boss_resume
         self._on_boss_victory = on_boss_victory
         self._on_boss_cancel = on_boss_cancel
         self._on_toggle_detection = on_toggle_detection
@@ -189,6 +193,8 @@ class App:
                     on_timer_stop=self._on_timer_stop,
                     on_timer_reset=self._on_timer_reset,
                     on_boss_start=self._on_boss_start,
+                    on_boss_pause=self._on_boss_pause,
+                    on_boss_resume=self._on_boss_resume,
                     on_boss_victory=self._on_boss_victory,
                     on_boss_cancel=self._on_boss_cancel,
                     on_toggle_detection=self._on_toggle_detection,
@@ -303,6 +309,7 @@ class App:
                 is_running=self.state.is_running,
                 boss_mode=self.state.boss_mode,
                 boss_deaths=self.state.boss_deaths,
+                boss_paused=self.state.boss_paused,
                 detection_enabled=self.state.detection_enabled,
             )
 
