@@ -16,3 +16,4 @@ build_output/
 htmlcov/
 *.log
 config.json
+CLAUDE.md
