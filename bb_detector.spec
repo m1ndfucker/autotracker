@@ -30,7 +30,7 @@ if TESSERACT.exists():
         tesseract_datas.append((str(tessdata), 'assets/tesseract/tessdata'))
 
 a = Analysis(
-    ['bb_detector/main.py'],
+    ['launcher.py'],
     pathex=[str(ROOT)],
     binaries=tesseract_binaries,
     datas=[
