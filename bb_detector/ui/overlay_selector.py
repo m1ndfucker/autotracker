@@ -139,9 +139,17 @@ class OverlayRegionSelector:
             import win32gui
             import win32con
             import win32api
+            import ctypes
 
-            screen_width = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
-            screen_height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
+            # Virtual screen = all monitors combined
+            # SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN = top-left corner (can be negative!)
+            # SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN = total width/height
+            self._vscreen_x = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+            self._vscreen_y = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+            screen_width = win32api.GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+            screen_height = win32api.GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+
+            print(f"[Overlay] Virtual screen: {self._vscreen_x},{self._vscreen_y} {screen_width}x{screen_height}", flush=True)
 
             wc = win32gui.WNDCLASS()
             wc.lpfnWndProc = self._windows_wnd_proc
@@ -155,21 +163,23 @@ class OverlayRegionSelector:
             except Exception:
                 pass
 
+            # Position window at virtual screen origin (can be negative)
             self._hwnd = win32gui.CreateWindowEx(
                 win32con.WS_EX_LAYERED | win32con.WS_EX_TOPMOST | win32con.WS_EX_TOOLWINDOW,
                 "OverlaySelectorWindow",
                 "",
                 win32con.WS_POPUP,
-                0, 0, screen_width, screen_height,
+                self._vscreen_x, self._vscreen_y, screen_width, screen_height,
                 0, 0, wc.hInstance, None
             )
 
             win32gui.SetLayeredWindowAttributes(self._hwnd, 0, 90, win32con.LWA_ALPHA)
 
-            self._win_start_x = 0
-            self._win_start_y = 0
-            self._win_current_x = 0
-            self._win_current_y = 0
+            # Initialize to None to detect first click properly
+            self._win_start_x = None
+            self._win_start_y = None
+            self._win_current_x = None
+            self._win_current_y = None
             self._win_dragging = False
             self._win_running = True
 
@@ -188,6 +198,15 @@ class OverlayRegionSelector:
             print(f"[OverlaySelector] Windows error: {e}", flush=True)
             self._cancelled = True
 
+    def _get_mouse_pos(self, lparam):
+        """Extract signed x,y from lparam (handles multi-monitor negative coords)."""
+        import ctypes
+        # LOWORD/HIWORD return unsigned, but coords can be negative
+        x = ctypes.c_short(lparam & 0xFFFF).value
+        y = ctypes.c_short((lparam >> 16) & 0xFFFF).value
+        # Convert to absolute screen coordinates
+        return x + self._vscreen_x, y + self._vscreen_y
+
     def _windows_wnd_proc(self, hwnd, msg, wparam, lparam):
         """Windows message handler."""
         import win32gui
@@ -195,18 +214,21 @@ class OverlayRegionSelector:
         import win32api
 
         if msg == win32con.WM_LBUTTONDOWN:
-            self._win_start_x = win32api.LOWORD(lparam)
-            self._win_start_y = win32api.HIWORD(lparam)
-            self._win_current_x = self._win_start_x
-            self._win_current_y = self._win_start_y
+            x, y = self._get_mouse_pos(lparam)
+            self._win_start_x = x
+            self._win_start_y = y
+            self._win_current_x = x
+            self._win_current_y = y
             self._win_dragging = True
             win32gui.SetCapture(hwnd)
+            print(f"[Overlay] Mouse down at {x},{y}", flush=True)
             return 0
 
         elif msg == win32con.WM_MOUSEMOVE:
             if self._win_dragging:
-                self._win_current_x = win32api.LOWORD(lparam)
-                self._win_current_y = win32api.HIWORD(lparam)
+                x, y = self._get_mouse_pos(lparam)
+                self._win_current_x = x
+                self._win_current_y = y
                 win32gui.InvalidateRect(hwnd, None, True)
             return 0
 
@@ -218,6 +240,8 @@ class OverlayRegionSelector:
                 x1, y1 = self._win_start_x, self._win_start_y
                 x2, y2 = self._win_current_x, self._win_current_y
 
+                print(f"[Overlay] Mouse up: ({x1},{y1}) to ({x2},{y2})", flush=True)
+
                 if x1 > x2:
                     x1, x2 = x2, x1
                 if y1 > y2:
@@ -227,6 +251,10 @@ class OverlayRegionSelector:
                     self._calculate_region(x1, y1, x2, y2)
                     self._win_running = False
                     win32gui.DestroyWindow(hwnd)
+                else:
+                    # Too small, reset
+                    self._win_start_x = None
+                    self._win_start_y = None
             return 0
 
         elif msg == win32con.WM_KEYDOWN:
@@ -238,15 +266,19 @@ class OverlayRegionSelector:
 
         elif msg == win32con.WM_PAINT:
             hdc, ps = win32gui.BeginPaint(hwnd)
-            if self._win_dragging:
+            # Only draw if we have valid start position and are dragging
+            if self._win_dragging and self._win_start_x is not None:
                 import win32ui
                 dc = win32ui.CreateDCFromHandle(hdc)
                 pen = win32ui.CreatePen(win32con.PS_SOLID, 2, win32api.RGB(255, 80, 80))
                 old_pen = dc.SelectObject(pen)
                 brush = win32gui.GetStockObject(win32con.HOLLOW_BRUSH)
                 old_brush = dc.SelectObject(brush)
-                x1, y1 = self._win_start_x, self._win_start_y
-                x2, y2 = self._win_current_x, self._win_current_y
+                # Convert absolute coords back to window coords for drawing
+                x1 = self._win_start_x - self._vscreen_x
+                y1 = self._win_start_y - self._vscreen_y
+                x2 = self._win_current_x - self._vscreen_x
+                y2 = self._win_current_y - self._vscreen_y
                 dc.Rectangle(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
                 dc.SelectObject(old_pen)
                 dc.SelectObject(old_brush)
