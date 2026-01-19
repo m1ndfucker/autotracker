@@ -41,7 +41,7 @@ class SetupSection:
         self._captured_frame: Optional[np.ndarray] = None
         self._corner_selector: Optional[CornerSelector] = None
         self._preview_texture_id: Optional[int] = None
-        self._preview_size = (200, 112)  # Preview dimensions
+        self._preview_size = (180, 100)  # Preview dimensions
 
         # Thread-safe pending updates (DearPyGui is not thread-safe)
         self._pending_progress: Optional[tuple[str, int]] = None
@@ -68,14 +68,12 @@ class SetupSection:
         # Create preview texture first
         self._create_preview_texture()
 
-        with dpg.child_window(
+        with dpg.group(
             tag=self._container_tag,
-            parent=parent,
-            height=440,
-            border=False
+            parent=parent
         ):
             # === Detection Region Card ===
-            with dpg.child_window(height=100, border=True) as card1:
+            with dpg.child_window(height=75, border=True) as card1:
                 dpg.bind_item_theme(card1, self._card_theme)
 
                 dpg.add_text("DETECTION REGION", color=COLORS['text_tertiary'])
@@ -112,10 +110,10 @@ class SetupSection:
                     wrap=180
                 )
 
-            dpg.add_spacer(height=8)
+            dpg.add_spacer(height=5)
 
             # === Test & Preview Card ===
-            with dpg.child_window(height=180, border=True) as card2:
+            with dpg.child_window(height=140, border=True) as card2:
                 dpg.bind_item_theme(card2, self._card_theme)
 
                 dpg.add_text("TEST & PREVIEW", color=COLORS['text_tertiary'])
@@ -167,10 +165,10 @@ class SetupSection:
                     wrap=190
                 )
 
-            dpg.add_spacer(height=8)
+            dpg.add_spacer(height=5)
 
             # === Detection Settings Card ===
-            with dpg.child_window(height=95, border=True) as card3:
+            with dpg.child_window(height=75, border=True) as card3:
                 dpg.bind_item_theme(card3, self._card_theme)
 
                 dpg.add_text("DETECTION SETTINGS", color=COLORS['text_tertiary'])
@@ -210,10 +208,10 @@ class SetupSection:
                         callback=self._on_setting_change
                     )
 
-            dpg.add_spacer(height=8)
+            dpg.add_spacer(height=5)
 
             # === Hotkeys Card ===
-            with dpg.child_window(height=115, border=True) as card4:
+            with dpg.child_window(height=95, border=True) as card4:
                 dpg.bind_item_theme(card4, self._card_theme)
 
                 dpg.add_text("HOTKEYS", color=COLORS['text_tertiary'])
