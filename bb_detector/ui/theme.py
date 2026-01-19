@@ -204,6 +204,54 @@ def create_ghost_button_theme() -> int:
     return theme
 
 
+def create_sidebar_theme() -> int:
+    """Sidebar navigation theme."""
+    with dpg.theme() as theme:
+        with dpg.theme_component(dpg.mvChildWindow):
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, COLORS['bg_base'])
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (0, 0, 0, 0))
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 0, 0)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 0)
+    return theme
+
+
+def create_sidebar_item_theme(active: bool = False) -> int:
+    """Sidebar item theme (active or inactive)."""
+    with dpg.theme() as theme:
+        with dpg.theme_component(dpg.mvButton):
+            if active:
+                dpg.add_theme_color(dpg.mvThemeCol_Button, COLORS['bg_secondary'])
+                dpg.add_theme_color(dpg.mvThemeCol_Text, COLORS['text_primary'])
+            else:
+                dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 0, 0, 0))
+                dpg.add_theme_color(dpg.mvThemeCol_Text, COLORS['text_tertiary'])
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, COLORS['bg_elevated'])
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, COLORS['bg_secondary'])
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 4)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 12, 8)
+    return theme
+
+
+def create_section_card_theme() -> int:
+    """Card container for sections."""
+    with dpg.theme() as theme:
+        with dpg.theme_component(dpg.mvChildWindow):
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, COLORS['bg_secondary'])
+            dpg.add_theme_color(dpg.mvThemeCol_Border, COLORS['border_subtle'])
+            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 8)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 12, 12)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1)
+    return theme
+
+
+def create_deaths_display_theme() -> int:
+    """Large deaths counter theme."""
+    with dpg.theme() as theme:
+        with dpg.theme_component(dpg.mvText):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, COLORS['red'])
+    return theme
+
+
 def create_card_theme() -> int:
     """Elevated card/container theme."""
     with dpg.theme() as theme:
