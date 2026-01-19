@@ -1,26 +1,31 @@
 # bb_detector/ui/app.py
-"""Main application window with tabs."""
+"""Main application window with sidebar navigation."""
 import dearpygui.dearpygui as dpg
 from typing import Optional, Callable
 from pathlib import Path
 import sys
 
-from .theme import create_theme, COLORS
-from .tabs.play import PlayTab
-from .tabs.settings import SettingsTab
-from .tabs.calibration import CalibrationTab
-from .tabs.history import HistoryTab
-from .tabs.stats import StatsTab
+from .theme import (
+    create_theme,
+    create_sidebar_theme,
+    create_sidebar_item_theme,
+    COLORS,
+)
+from .sections.play import PlaySection
+from .sections.setup import SetupSection
+from .sections.history import HistorySection
 from .compact import CompactWindow
-from .profile_dialog import ProfileDialog
+from .dialogs.profile import ProfileDialog
 from ..state import StateManager
 from ..config import Config
 
-class App:
-    """Main application window manager."""
 
-    FULL_WIDTH = 400
-    FULL_HEIGHT = 520
+class App:
+    """Main application window manager with sidebar navigation."""
+
+    FULL_WIDTH = 600
+    FULL_HEIGHT = 500
+    SIDEBAR_WIDTH = 150
 
     def __init__(
         self,
@@ -76,13 +81,19 @@ class App:
         self._on_add_stats = on_add_stats or (lambda s: None)
         self._on_delete_stats = on_delete_stats or (lambda i: None)
 
-        # UI components
-        self.play_tab: Optional[PlayTab] = None
-        self.settings_tab: Optional[SettingsTab] = None
-        self.calibration_tab: Optional[CalibrationTab] = None
-        self.history_tab: Optional[HistoryTab] = None
-        self.stats_tab: Optional[StatsTab] = None
+        # UI components (sections instead of tabs)
+        self.play_section: Optional[PlaySection] = None
+        self.setup_section: Optional[SetupSection] = None
+        self.history_section: Optional[HistorySection] = None
         self.compact_window: Optional[CompactWindow] = None
+
+        # Current active section
+        self._current_section = "play"
+
+        # Sidebar themes (active/inactive)
+        self._sidebar_theme: Optional[int] = None
+        self._sidebar_item_active_theme: Optional[int] = None
+        self._sidebar_item_inactive_theme: Optional[int] = None
 
         self._is_compact = False
         self._running = False
@@ -152,6 +163,11 @@ class App:
         theme = create_theme()
         dpg.bind_theme(theme)
 
+        # Create sidebar themes
+        self._sidebar_theme = create_sidebar_theme()
+        self._sidebar_item_active_theme = create_sidebar_item_theme(active=True)
+        self._sidebar_item_inactive_theme = create_sidebar_item_theme(active=False)
+
         # Create main window
         self._create_main_window()
 
@@ -169,7 +185,7 @@ class App:
         self._running = True
 
     def _create_main_window(self):
-        """Create the main window with tabs."""
+        """Create the main window with sidebar layout."""
         with dpg.window(tag="main_window", label="", no_title_bar=True, no_resize=True, no_move=True):
             # Configure to fill viewport
             dpg.set_primary_window("main_window", True)
@@ -177,68 +193,166 @@ class App:
             # Header
             with dpg.group(horizontal=True):
                 dpg.add_text("BB Death Detector", color=COLORS['text'])
-                dpg.add_spacer(width=100)
+                dpg.add_spacer(width=300)
                 dpg.add_button(label="[_]", width=30, callback=self._switch_to_compact)
                 dpg.add_button(label="[X]", width=30, callback=self._on_quit)
 
             dpg.add_separator()
             dpg.add_spacer(height=5)
 
-            # Tab bar
-            with dpg.tab_bar(tag="main_tabs"):
-                # Play tab
-                self.play_tab = PlayTab(
-                    on_manual_death=self._on_manual_death,
-                    on_timer_start=self._on_timer_start,
-                    on_timer_stop=self._on_timer_stop,
-                    on_timer_reset=self._on_timer_reset,
-                    on_boss_start=self._on_boss_start,
-                    on_boss_pause=self._on_boss_pause,
-                    on_boss_resume=self._on_boss_resume,
-                    on_boss_victory=self._on_boss_victory,
-                    on_boss_cancel=self._on_boss_cancel,
-                    on_toggle_detection=self._on_toggle_detection,
-                )
-                self.play_tab.create("main_tabs")
-
-                # Settings tab
-                self.settings_tab = SettingsTab(
-                    config=self.config,
-                    on_change_profile=self._show_profile_dialog,
-                    on_save_settings=self._save_settings,
-                )
-                self.settings_tab.create("main_tabs")
-
-                # Calibration tab
-                self.calibration_tab = CalibrationTab(
-                    config=self.config,
-                    on_capture=self._on_capture,
-                    on_capture_region=self._on_capture_region,
-                    on_test_detection=self._on_test_detection,
-                    on_save_region=self._on_save_region,
-                )
-                self.calibration_tab.create("main_tabs")
-
-                # History tab
-                self.history_tab = HistoryTab(
-                    on_add_milestone=self._on_add_milestone,
-                    on_delete_milestone=self._on_delete_milestone,
-                )
-                self.history_tab.create("main_tabs")
-
-                # Stats tab
-                self.stats_tab = StatsTab(
-                    on_add_stats=self._on_add_stats,
-                    on_delete_stats=self._on_delete_stats,
-                )
-                self.stats_tab.create("main_tabs")
-
-            # Footer - status bar
-            dpg.add_spacer(height=5)
-            dpg.add_separator()
+            # Main content area: Sidebar + Content
             with dpg.group(horizontal=True):
-                dpg.add_text("", tag="status_indicator", color=COLORS['accent'])
-                dpg.add_text("Disconnected", tag="status_text", color=COLORS['text_dim'])
+                # === Sidebar (150px) ===
+                with dpg.child_window(
+                    tag="sidebar",
+                    width=self.SIDEBAR_WIDTH,
+                    height=440,
+                    border=False,
+                ) as sidebar:
+                    dpg.bind_item_theme(sidebar, self._sidebar_theme)
+
+                    dpg.add_spacer(height=10)
+
+                    # Navigation buttons
+                    btn_play = dpg.add_button(
+                        label="Play",
+                        tag="nav_play",
+                        width=-1,
+                        height=36,
+                        callback=lambda: self._switch_section("play"),
+                    )
+                    dpg.bind_item_theme(btn_play, self._sidebar_item_active_theme)
+
+                    dpg.add_spacer(height=4)
+
+                    btn_setup = dpg.add_button(
+                        label="Setup",
+                        tag="nav_setup",
+                        width=-1,
+                        height=36,
+                        callback=lambda: self._switch_section("setup"),
+                    )
+                    dpg.bind_item_theme(btn_setup, self._sidebar_item_inactive_theme)
+
+                    dpg.add_spacer(height=4)
+
+                    btn_history = dpg.add_button(
+                        label="History",
+                        tag="nav_history",
+                        width=-1,
+                        height=36,
+                        callback=lambda: self._switch_section("history"),
+                    )
+                    dpg.bind_item_theme(btn_history, self._sidebar_item_inactive_theme)
+
+                    # Spacer to push status to bottom
+                    dpg.add_spacer(height=240)
+
+                    # Separator before status
+                    dpg.add_separator()
+                    dpg.add_spacer(height=8)
+
+                    # Connection status
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("", tag="sidebar_status_indicator", color=COLORS['accent'])
+                        dpg.add_text("Offline", tag="sidebar_status_text", color=COLORS['text_dim'])
+
+                    dpg.add_spacer(height=4)
+
+                    # Profile name
+                    dpg.add_text("", tag="sidebar_profile_name", color=COLORS['text_secondary'])
+
+                    dpg.add_spacer(height=8)
+
+                    # Change profile button
+                    dpg.add_button(
+                        label="Change",
+                        tag="sidebar_change_profile_btn",
+                        width=80,
+                        height=24,
+                        callback=self._show_profile_dialog,
+                    )
+
+                # === Content Area (450px) ===
+                with dpg.child_window(
+                    tag="content_area",
+                    width=-1,
+                    height=440,
+                    border=False,
+                ):
+                    # Play section
+                    self.play_section = PlaySection(
+                        on_manual_death=self._on_manual_death,
+                        on_timer_start=self._on_timer_start,
+                        on_timer_stop=self._on_timer_stop,
+                        on_timer_reset=self._on_timer_reset,
+                        on_boss_start=self._on_boss_start,
+                        on_boss_pause=self._on_boss_pause,
+                        on_boss_resume=self._on_boss_resume,
+                        on_boss_victory=self._on_boss_victory,
+                        on_boss_cancel=self._on_boss_cancel,
+                        on_toggle_detection=self._on_toggle_detection,
+                    )
+                    self.play_section.create("content_area")
+
+                    # Setup section (hidden by default)
+                    self.setup_section = SetupSection(
+                        config=self.config,
+                        on_capture=self._on_capture,
+                        on_capture_region=self._on_capture_region,
+                        on_test_detection=self._on_test_detection,
+                        on_save_region=self._on_save_region,
+                        on_save_settings=self._save_settings,
+                    )
+                    self.setup_section.create("content_area")
+                    self.setup_section.hide()
+
+                    # History section (hidden by default)
+                    self.history_section = HistorySection(
+                        on_add_milestone=self._on_add_milestone,
+                        on_delete_milestone=self._on_delete_milestone,
+                        on_add_stats=self._on_add_stats,
+                        on_delete_stats=self._on_delete_stats,
+                    )
+                    self.history_section.create("content_area")
+                    self.history_section.hide()
+
+    def _switch_section(self, section: str):
+        """Switch to a different section, updating visibility and nav button themes."""
+        if section == self._current_section:
+            return
+
+        self._current_section = section
+
+        # Update section visibility
+        if self.play_section:
+            if section == "play":
+                self.play_section.show()
+            else:
+                self.play_section.hide()
+
+        if self.setup_section:
+            if section == "setup":
+                self.setup_section.show()
+            else:
+                self.setup_section.hide()
+
+        if self.history_section:
+            if section == "history":
+                self.history_section.show()
+            else:
+                self.history_section.hide()
+
+        # Update nav button themes
+        nav_buttons = ["nav_play", "nav_setup", "nav_history"]
+        section_map = {"play": "nav_play", "setup": "nav_setup", "history": "nav_history"}
+
+        for btn_tag in nav_buttons:
+            if dpg.does_item_exist(btn_tag):
+                if btn_tag == section_map[section]:
+                    dpg.bind_item_theme(btn_tag, self._sidebar_item_active_theme)
+                else:
+                    dpg.bind_item_theme(btn_tag, self._sidebar_item_inactive_theme)
 
     def show_profile_dialog(self):
         """Show profile selection dialog."""
@@ -249,7 +363,7 @@ class App:
         dialog.show()
 
     def _show_profile_dialog(self):
-        """Internal: show profile dialog from settings."""
+        """Internal: show profile dialog from sidebar."""
         self.show_profile_dialog()
 
     def _on_profile_selected(self, name: str, password: str, is_new: bool):
@@ -290,9 +404,9 @@ class App:
             self._switch_to_compact()
 
     def on_f9_pressed(self):
-        """Handle F9 hotkey press, pass to calibration tab if active."""
-        if self.calibration_tab:
-            self.calibration_tab.on_f9_pressed()
+        """Handle F9 hotkey press, pass to setup section if active."""
+        if self.setup_section:
+            self.setup_section.on_f9_pressed()
 
     def _on_state_change(self, key: str, value):
         """Handle state changes."""
@@ -301,9 +415,9 @@ class App:
 
     def _update_ui(self):
         """Update all UI elements from state."""
-        # Update play tab
-        if self.play_tab:
-            self.play_tab.update(
+        # Update play section
+        if self.play_section:
+            self.play_section.update(
                 deaths=self.state.deaths,
                 elapsed=self.state.elapsed,
                 is_running=self.state.is_running,
@@ -313,24 +427,14 @@ class App:
                 detection_enabled=self.state.detection_enabled,
             )
 
-        # Update settings tab
-        if self.settings_tab:
-            self.settings_tab.update(
-                profile=self.state.profile_display_name or self.state.profile,
-                connected=self.state.connected,
-            )
-
-        # Update history tab
-        if self.history_tab:
-            self.history_tab.update(
+        # Update history section
+        if self.history_section:
+            self.history_section.update(
+                deaths=self.state.deaths,
+                elapsed=self.state.elapsed,
                 milestones=self.state.get('milestones', []),
                 death_timestamps=self.state.get('death_timestamps', []),
                 boss_fights=self.state.get('boss_fights', []),
-            )
-
-        # Update stats tab
-        if self.stats_tab:
-            self.stats_tab.update(
                 character_stats=self.state.get('character_stats', []),
             )
 
@@ -345,28 +449,33 @@ class App:
                 profile=self.state.profile_display_name or self.state.profile or "",
             )
 
-        # Update status bar
-        if dpg.does_item_exist("status_indicator"):
+        # Update sidebar status
+        if dpg.does_item_exist("sidebar_status_indicator"):
             if self.state.connected:
-                dpg.set_value("status_indicator", "●")
-                dpg.configure_item("status_indicator", color=COLORS['success'])
+                dpg.set_value("sidebar_status_indicator", "")
+                dpg.configure_item("sidebar_status_indicator", color=COLORS['success'])
             else:
-                dpg.set_value("status_indicator", "●")
-                dpg.configure_item("status_indicator", color=COLORS['accent'])
+                dpg.set_value("sidebar_status_indicator", "")
+                dpg.configure_item("sidebar_status_indicator", color=COLORS['accent'])
 
-        if dpg.does_item_exist("status_text"):
+        if dpg.does_item_exist("sidebar_status_text"):
             if self.state.connected:
-                profile = self.state.profile_display_name or self.state.profile or ""
-                dpg.set_value("status_text", f"Connected: {profile}")
+                dpg.set_value("sidebar_status_text", "Online")
+                dpg.configure_item("sidebar_status_text", color=COLORS['success'])
             else:
-                dpg.set_value("status_text", "Disconnected")
+                dpg.set_value("sidebar_status_text", "Offline")
+                dpg.configure_item("sidebar_status_text", color=COLORS['text_dim'])
+
+        if dpg.does_item_exist("sidebar_profile_name"):
+            profile = self.state.profile_display_name or self.state.profile or ""
+            dpg.set_value("sidebar_profile_name", profile)
 
     def render(self):
         """Render one frame."""
         if self._running:
-            # Process pending updates from calibration tab (thread-safe)
-            if self.calibration_tab:
-                self.calibration_tab.update()
+            # Process pending updates from setup section (thread-safe)
+            if self.setup_section:
+                self.setup_section.update()
             dpg.render_dearpygui_frame()
 
     def is_running(self) -> bool:
