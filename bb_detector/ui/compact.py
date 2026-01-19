@@ -3,8 +3,8 @@
 import dearpygui.dearpygui as dpg
 from typing import Callable, Optional
 from .theme import COLORS, create_accent_button_theme, create_boss_button_theme, create_success_button_theme
-from ..dialogs.milestone import MilestoneDialog
-from ..dialogs.stats import StatsDialog
+from .dialogs.milestone import MilestoneDialog
+from .dialogs.stats import StatsDialog
 
 
 class CompactWindow:
