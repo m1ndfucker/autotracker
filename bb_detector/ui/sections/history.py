@@ -70,7 +70,7 @@ class HistorySection:
                 dpg.bind_item_theme(card, self._card_theme)
 
                 dpg.add_text("Current Session", color=COLORS['text_primary'])
-                dpg.add_spacer(height=5)
+                dpg.add_spacer(height=2)
 
                 with dpg.group(horizontal=True):
                     # Deaths
@@ -92,7 +92,7 @@ class HistorySection:
                     dpg.add_text("Milestones:", color=COLORS['text_tertiary'])
                     dpg.add_text("0", tag="history_session_milestones", color=COLORS['purple'])
 
-            dpg.add_spacer(height=10)
+            dpg.add_spacer(height=5)
 
             # === Milestones Section ===
             with dpg.group(horizontal=True):
@@ -101,10 +101,10 @@ class HistorySection:
                 btn = dpg.add_button(label="+ Add", width=60, callback=self._on_add_milestone_click)
                 dpg.bind_item_theme(btn, self._accent_theme)
 
-            with dpg.child_window(tag="history_milestones_list", height=100, border=False):
+            with dpg.child_window(tag="history_milestones_list", height=70, border=False):
                 dpg.add_text("No milestones yet", tag="history_no_milestones", color=COLORS['text_tertiary'])
 
-            dpg.add_spacer(height=10)
+            dpg.add_spacer(height=5)
 
             # === Character Stats Section ===
             with dpg.group(horizontal=True):
@@ -113,25 +113,25 @@ class HistorySection:
                 btn = dpg.add_button(label="+ Add", width=60, callback=self._on_add_stats_click)
                 dpg.bind_item_theme(btn, self._accent_theme)
 
-            with dpg.child_window(tag="history_stats_list", height=100, border=False):
+            with dpg.child_window(tag="history_stats_list", height=50, border=False):
                 dpg.add_text("No stats recorded", tag="history_no_stats", color=COLORS['text_tertiary'])
 
-            dpg.add_spacer(height=10)
+            dpg.add_spacer(height=5)
             dpg.add_separator()
-            dpg.add_spacer(height=10)
+            dpg.add_spacer(height=5)
 
             # === Boss Fights Section (auto-recorded) ===
             dpg.add_text("Boss Fights", color=COLORS['teal'])
 
-            with dpg.child_window(tag="history_bosses_list", height=80, border=False):
+            with dpg.child_window(tag="history_bosses_list", height=60, border=False):
                 dpg.add_text("No boss fights yet", tag="history_no_bosses", color=COLORS['text_tertiary'])
 
-            dpg.add_spacer(height=10)
+            dpg.add_spacer(height=5)
 
             # === Recent Deaths Section (auto-recorded) ===
             dpg.add_text("Recent Deaths", color=COLORS['red'])
 
-            with dpg.child_window(tag="history_deaths_list", height=80, border=False):
+            with dpg.child_window(tag="history_deaths_list", height=50, border=False):
                 dpg.add_text("No deaths recorded", tag="history_no_deaths", color=COLORS['text_tertiary'])
 
     def update(
