@@ -206,7 +206,7 @@ class App:
                 with dpg.child_window(
                     tag="sidebar",
                     width=self.SIDEBAR_WIDTH,
-                    height=440,
+                    height=-1,
                     border=False,
                 ) as sidebar:
                     dpg.bind_item_theme(sidebar, self._sidebar_theme)
@@ -246,7 +246,7 @@ class App:
                     dpg.bind_item_theme(btn_history, self._sidebar_item_inactive_theme)
 
                     # Spacer to push status to bottom
-                    dpg.add_spacer(height=240)
+                    dpg.add_spacer(height=90)
 
                     # Separator before status
                     dpg.add_separator()
@@ -273,11 +273,11 @@ class App:
                         callback=self._show_profile_dialog,
                     )
 
-                # === Content Area (450px) ===
+                # === Content Area ===
                 with dpg.child_window(
                     tag="content_area",
                     width=-1,
-                    height=440,
+                    height=-1,
                     border=False,
                 ):
                     # Play section

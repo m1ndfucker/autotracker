@@ -62,7 +62,7 @@ class PlaySection:
             # === Deaths Counter Card (prominent) ===
             with dpg.child_window(
                 tag="play_deaths_card",
-                height=120,
+                height=90,
                 border=True,
                 autosize_x=True,
             ) as deaths_card:
@@ -70,7 +70,7 @@ class PlaySection:
 
                 # Centered deaths display
                 with dpg.group(horizontal=False):
-                    dpg.add_spacer(height=8)
+                    dpg.add_spacer(height=4)
                     dpg.add_text(
                         "DEATHS",
                         color=COLORS['text_tertiary'],
@@ -80,34 +80,36 @@ class PlaySection:
                         tag="play_deaths_display",
                         color=COLORS['red'],
                     )
-                    dpg.add_spacer(height=8)
+                    dpg.add_spacer(height=4)
 
                     # +1 Death button
                     btn = dpg.add_button(
                         label="+1 Death",
                         callback=self._on_death_click,
                         width=120,
-                        height=32,
+                        height=28,
                     )
                     dpg.bind_item_theme(btn, self._accent_theme)
 
-            dpg.add_spacer(height=12)
+            dpg.add_spacer(height=8)
 
             # === Timer Card ===
             with dpg.child_window(
                 tag="play_timer_card",
-                height=90,
+                height=70,
                 border=True,
                 autosize_x=True,
             ) as timer_card:
                 dpg.bind_item_theme(timer_card, self._card_theme)
 
-                dpg.add_text("Timer", color=COLORS['text_tertiary'])
-                dpg.add_text(
-                    "00:00:00",
-                    tag="play_timer_display",
-                    color=COLORS['text_primary'],
-                )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Timer", color=COLORS['text_tertiary'])
+                    dpg.add_spacer(width=8)
+                    dpg.add_text(
+                        "00:00:00",
+                        tag="play_timer_display",
+                        color=COLORS['text_primary'],
+                    )
 
                 dpg.add_spacer(height=4)
 
@@ -117,7 +119,7 @@ class PlaySection:
                         tag="play_timer_start_btn",
                         callback=self._on_timer_start,
                         width=60,
-                        height=28,
+                        height=26,
                     )
                     dpg.bind_item_theme(btn_start, self._success_theme)
 
@@ -126,22 +128,22 @@ class PlaySection:
                         tag="play_timer_stop_btn",
                         callback=self._on_timer_stop,
                         width=60,
-                        height=28,
+                        height=26,
                     )
 
                     dpg.add_button(
                         label="Reset",
                         callback=self._on_timer_reset,
                         width=60,
-                        height=28,
+                        height=26,
                     )
 
-            dpg.add_spacer(height=12)
+            dpg.add_spacer(height=8)
 
             # === Boss Mode Card ===
             with dpg.child_window(
                 tag="play_boss_card",
-                height=110,
+                height=85,
                 border=True,
                 autosize_x=True,
             ) as boss_card:
@@ -155,9 +157,8 @@ class PlaySection:
                         tag="play_boss_status",
                         color=COLORS['text_disabled'],
                     )
-
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Boss Deaths:", color=COLORS['text_tertiary'])
+                    dpg.add_spacer(width=12)
+                    dpg.add_text("Deaths:", color=COLORS['text_tertiary'])
                     dpg.add_text(
                         "0",
                         tag="play_boss_deaths_display",
@@ -174,8 +175,8 @@ class PlaySection:
                     btn_boss = dpg.add_button(
                         label="Start Boss",
                         callback=self._on_boss_start,
-                        width=110,
-                        height=28,
+                        width=100,
+                        height=26,
                     )
                     dpg.bind_item_theme(btn_boss, self._boss_theme)
 
@@ -188,8 +189,8 @@ class PlaySection:
                     btn_victory = dpg.add_button(
                         label="Victory",
                         callback=self._on_boss_victory_click,
-                        width=70,
-                        height=28,
+                        width=65,
+                        height=26,
                     )
                     dpg.bind_item_theme(btn_victory, self._success_theme)
 
@@ -197,23 +198,23 @@ class PlaySection:
                         label="Pause",
                         tag="play_boss_pause_btn",
                         callback=self._on_boss_pause,
-                        width=60,
-                        height=28,
+                        width=55,
+                        height=26,
                     )
 
                     dpg.add_button(
                         label="Cancel",
                         callback=self._on_boss_cancel,
-                        width=60,
-                        height=28,
+                        width=55,
+                        height=26,
                     )
 
-            dpg.add_spacer(height=12)
+            dpg.add_spacer(height=8)
 
             # === Detection Card ===
             with dpg.child_window(
                 tag="play_detection_card",
-                height=70,
+                height=50,
                 border=True,
                 autosize_x=True,
             ) as detection_card:
@@ -227,15 +228,13 @@ class PlaySection:
                         tag="play_detection_status",
                         color=COLORS['green'],
                     )
-
-                dpg.add_spacer(height=4)
-
-                dpg.add_button(
-                    label="Toggle Detection",
-                    callback=self._on_toggle_detection,
-                    width=120,
-                    height=28,
-                )
+                    dpg.add_spacer(width=16)
+                    dpg.add_button(
+                        label="Toggle",
+                        callback=self._on_toggle_detection,
+                        width=70,
+                        height=24,
+                    )
 
     def update(
         self,
