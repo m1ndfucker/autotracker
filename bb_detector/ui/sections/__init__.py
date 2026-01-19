@@ -1,9 +1,7 @@
 """UI sections for sidebar navigation."""
 
 from .play import PlaySection
+from .setup import SetupSection
 from .history import HistorySection
-
-# Imports commented out until files are created in later tasks
-# from .setup import SetupSection
 
 __all__ = ['PlaySection', 'SetupSection', 'HistorySection']
