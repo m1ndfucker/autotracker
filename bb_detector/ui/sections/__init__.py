@@ -1,7 +1,8 @@
 """UI sections for sidebar navigation."""
 
+from .play import PlaySection
+
 # Imports commented out until files are created in later tasks
-# from .play import PlaySection
 # from .setup import SetupSection
 # from .history import HistorySection
 
