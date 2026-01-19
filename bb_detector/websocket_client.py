@@ -11,13 +11,13 @@ class BBWebSocket:
     """WebSocket client for Bloodborne death tracker.
 
     Server: bloodborne-server.js (multi-profile)
-    - Endpoint: wss://watch.home.kg/bb?profile=PROFILE_NAME
+    - Endpoint: wss://soulsdeaths.somework.dev/ws?bloodborne=true&profile=PROFILE_NAME
     - Auth: Send bb-auth with password to get canEdit=true
     - Client sends: bb-death, bb-boss-death, bb-start, bb-stop, bb-boss-start, etc.
     - Server sends: bb-state with full state
     """
 
-    WS_URL = "wss://watch.home.kg/ws"
+    WS_URL = "wss://soulsdeaths.somework.dev/ws"
 
     def __init__(
         self,

@@ -485,7 +485,7 @@ class BBDetectorApp:
             import requests
             try:
                 resp = requests.post(
-                    'https://watch.home.kg/api/bb-profiles',
+                    'https://soulsdeaths.somework.dev/api/bb-profiles',
                     json={'name': name, 'password': password},
                     timeout=5
                 )

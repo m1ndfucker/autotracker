@@ -7,7 +7,7 @@ import requests
 class ProfileDialog:
     """Modal dialog for selecting or creating a profile."""
 
-    API_URL = "https://watch.home.kg/api/bb-profiles"
+    API_URL = "https://soulsdeaths.somework.dev/api/bb-profiles"
 
     def __init__(self, on_select: Callable[[str, str, bool], None], on_cancel: Callable[[], None]):
         """
